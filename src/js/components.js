@@ -180,36 +180,63 @@ export const Grille = {
 export const Chat = {
     template: `
         <div class="chat">
-            <div class="chat-header">
-                <h2>💬 Chat en Temps Réel</h2>
-                <div class="connection-status">
-                    <span :class="connectionClass">{{ connectionText }}</span>
+            <!-- Formulaire de pseudo (affiché en premier) -->
+            <div v-if="!username" class="pseudo-form">
+                <div class="pseudo-form-content">
+                    <h2>🎭 Entrez votre pseudo</h2>
+                    <p>Choisissez un nom d'utilisateur pour le chat</p>
+
+                    <div class="pseudo-input-container">
+                        <input
+                            v-model="tempUsername"
+                            type="text"
+                            placeholder="Votre pseudo..."
+                            class="pseudo-input"
+                            @keypress.enter="setUsername"
+                            maxlength="20"
+                        >
+                        <button @click="setUsername" class="pseudo-button" :disabled="!tempUsername.trim()">
+                            🚀 Rejoindre le chat
+                        </button>
+                    </div>
+
+                    <p class="pseudo-hint">Ce pseudo sera visible par tous les participants</p>
                 </div>
-                <button class="close-chat-btn" @click="closeChat">✕</button>
             </div>
 
-            <div class="chat-messages">
-                <div
-                    v-for="message in messages"
-                    :key="message.id"
-                    class="chat-message"
-                    :class="{ 'sent': message.type === 'sent', 'system': message.type === 'system' }"
-                >
-                    <strong>{{ message.sender }}:</strong> {{ message.content }}
-                    <span class="message-time">{{ message.time }}</span>
+            <!-- Chat principal (affiché après saisie du pseudo) -->
+            <div v-else class="chat-main">
+                <div class="chat-header">
+                    <h2>💬 Chat en Temps Réel</h2>
+                    <div class="connection-status">
+                        <span :class="connectionClass">{{ connectionText }}</span>
+                    </div>
+                    <button class="close-chat-btn" @click="closeChat">✕</button>
                 </div>
-            </div>
 
-            <div class="chat-input-container">
-                <input
-                    v-model="newMessage"
-                    type="text"
-                    placeholder="Tapez votre message..."
-                    class="chat-input"
-                    @keypress.enter="sendMessage"
-                    :disabled="!isConnected"
-                >
-                <button @click="sendMessage" class="send-button" :disabled="!isConnected">📤 Envoyer</button>
+                <div class="chat-messages">
+                    <div
+                        v-for="message in messages"
+                        :key="message.id"
+                        class="chat-message"
+                        :class="{ 'sent': message.type === 'sent', 'system': message.type === 'system' }"
+                    >
+                        <strong>{{ message.sender }}:</strong> {{ message.content }}
+                        <span class="message-time">{{ message.time }}</span>
+                    </div>
+                </div>
+
+                <div class="chat-input-container">
+                    <input
+                        v-model="newMessage"
+                        type="text"
+                        placeholder="Tapez votre message..."
+                        class="chat-input"
+                        @keypress.enter="sendMessage"
+                        :disabled="!isConnected"
+                    >
+                    <button @click="sendMessage" class="send-button" :disabled="!isConnected">📤 Envoyer</button>
+                </div>
             </div>
         </div>
     `,
@@ -219,13 +246,15 @@ export const Chat = {
     data() {
         return {
             newMessage: '',
+            tempUsername: '',
+            username: '',
             messages: [
                 {
                     id: 1,
-                    sender: 'Serveur',
-                    content: 'Bienvenue dans le chat !',
+                    sender: 'Système',
+                    content: 'Entrez votre pseudo pour commencer à chatter !',
                     time: new Date().toLocaleTimeString(),
-                    type: 'received'
+                    type: 'system'
                 }
             ],
             ws: null,
@@ -253,6 +282,21 @@ export const Chat = {
             this.$emit('close-chat');
         },
 
+        setUsername() {
+            if (this.tempUsername.trim()) {
+                this.username = this.tempUsername.trim();
+                this.tempUsername = '';
+
+                // Effacer les messages de bienvenue
+                this.messages = [];
+
+                // Se connecter au WebSocket
+                this.connectWebSocket();
+
+                console.log('🎭 Pseudo défini:', this.username);
+            }
+        },
+
         connectWebSocket() {
             // Configuration flexible pour développement et production
             let wsUrl;
@@ -275,20 +319,25 @@ export const Chat = {
                     this.isConnected = true;
                     this.reconnectAttempts = 0;
 
-                    // Rejoindre une room par défaut (chat global)
+                    // Rejoindre une room avec le pseudo
                     this.ws.send(JSON.stringify({
                         type: 'join',
-                        roomId: 'global-chat'
+                        roomId: 'global-chat',
+                        username: this.username
                     }));
 
-                    this.addMessage('Système', 'Connecté au serveur de chat !', 'system');
+                    this.addMessage('Système', `Bienvenue ${this.username} ! Connecté au chat.`, 'system');
                 };
 
                 this.ws.onmessage = (event) => {
                     try {
                         const data = JSON.parse(event.data);
                         if (data.type === 'message') {
-                            this.addMessage('Autre utilisateur', data.payload, 'received');
+                            this.addMessage(data.username || 'Anonyme', data.payload, 'received');
+                        } else if (data.type === 'user_joined') {
+                            this.addMessage('Système', `${data.username} a rejoint le chat`, 'system');
+                        } else if (data.type === 'user_left') {
+                            this.addMessage('Système', `${data.username} a quitté le chat`, 'system');
                         }
                     } catch (error) {
                         console.error('Erreur parsing message:', error);
@@ -335,18 +384,19 @@ export const Chat = {
         },
 
         sendMessage() {
-            if (this.newMessage.trim() && this.isConnected && this.ws) {
-                // Envoyer via WebSocket
+            if (this.newMessage.trim() && this.isConnected && this.ws && this.username) {
+                // Envoyer via WebSocket avec le pseudo
                 this.ws.send(JSON.stringify({
                     type: 'message',
                     roomId: 'global-chat',
+                    username: this.username,
                     payload: this.newMessage.trim()
                 }));
 
                 // Ajouter le message localement
-                this.addMessage('Vous', this.newMessage.trim(), 'sent');
+                this.addMessage(this.username, this.newMessage.trim(), 'sent');
                 this.newMessage = '';
-                console.log('📤 Message envoyé via WebSocket');
+                console.log('📤 Message envoyé par', this.username);
             }
         },
 

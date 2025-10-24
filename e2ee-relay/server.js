@@ -53,25 +53,72 @@ wss.on("connection", (ws) => {
     try { msg = JSON.parse(raw.toString()); } catch { return; }
 
     if (msg.type === "join") {
+      // Stocker le pseudo du client
+      ws.username = msg.username || 'Anonyme';
       joinRoom(msg.roomId, ws);
+
+      // Notifier tous les autres clients qu'un utilisateur a rejoint
+      const set = rooms.get(msg.roomId);
+      if (set) {
+        for (const client of set) {
+          if (client !== ws && client.readyState === WebSocket.OPEN) {
+            client.send(JSON.stringify({
+              type: 'user_joined',
+              roomId: msg.roomId,
+              username: ws.username
+            }));
+          }
+        }
+      }
+
+      // Confirmer la connexion au client
+      ws.send(JSON.stringify({
+        type: 'joined',
+        roomId: msg.roomId,
+        username: ws.username
+      }));
+
+      console.log(`👤 ${ws.username} a rejoint la room ${msg.roomId}`);
       return;
     }
 
-    // Relais aveugle : renvoie le payload tel quel
+    // Relais des messages avec le pseudo
     const set = rooms.get(msg.roomId);
     if (!set) return;
+
     for (const client of set) {
       if (client !== ws && client.readyState === WebSocket.OPEN) {
         client.send(JSON.stringify({
           type: msg.type,
           roomId: msg.roomId,
+          username: ws.username,
           payload: msg.payload
         }));
       }
     }
   });
 
-  ws.on("close", () => leaveRoom(ws));
+  ws.on("close", () => {
+    const roomId = ws.roomId;
+    const username = ws.username;
+
+    if (roomId && rooms.has(roomId)) {
+      // Notifier les autres clients qu'un utilisateur a quitté
+      const set = rooms.get(roomId);
+      for (const client of set) {
+        if (client.readyState === WebSocket.OPEN) {
+          client.send(JSON.stringify({
+            type: 'user_left',
+            roomId: roomId,
+            username: username
+          }));
+        }
+      }
+
+      leaveRoom(ws);
+      console.log(`👤 ${username} a quitté la room ${roomId}`);
+    }
+  });
 });
 
 const PORT = process.env.PORT || 3000;
