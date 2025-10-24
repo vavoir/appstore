@@ -23,13 +23,10 @@ C'est une application toute simple qui me permet de naviguer dans ma collection 
 ## 🎯 Utilisation
 
 - **Page principale** : Grille de jeux avec pagination
-- **Clic sur une tuile** : Ouvre la vue de chat
-- **Points en bas** : Naviguez entre les pages
-- **Bouton ✕** : Retour à la grille
 
 ## 💡 Technologies utilisées
 
-J'ai utilisé Vue.js pour l'interface, Electron pour l'application desktop, et un petit serveur Node.js pour le chat. C'est un projet d'apprentissage, donc pas de technologies compliquées !
+J'ai utilisé Vue.js pour l'interface, Electron pour l'application desktop. C'est un projet d'apprentissage, donc pas de technologies compliquées !
 
 ## 📝 Note personnelle
 
