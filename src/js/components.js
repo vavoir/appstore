@@ -300,10 +300,18 @@ export const Chat = {
         connectWebSocket() {
             // Configuration flexible pour développement et production
             let wsUrl;
+
+            // Test temporaire avec Railway - remplace par ton URL quand tu l'as
+            const RAILWAY_URL = 'wss://appstore.railway.internal';
+
             if (typeof window !== 'undefined' && window.location) {
-                // En production (Railway), utiliser la même origine avec wss
-                wsUrl = (window.location.protocol === 'https:' ? 'wss:' : 'ws:') +
-                       '//' + window.location.host;
+                // En production, utiliser Railway
+                if (window.location.hostname.includes('railway')) {
+                    wsUrl = RAILWAY_URL;
+                } else {
+                    // En développement local
+                    wsUrl = 'ws://localhost:3000';
+                }
             } else {
                 // En développement local
                 wsUrl = 'ws://localhost:3000';
