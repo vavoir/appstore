@@ -1,0 +1,255 @@
+/* Styles pour l'App Store de Jeux - Vue.js modulaire */
+
+/* Styles globaux */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: #333;
+    min-height: 600px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden;
+}
+
+.app {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+/* Responsive */
+@media (max-width: 900px) {
+    body {
+        padding: 10px;
+    }
+
+    .grille .game-container {
+        width: 90vw !important;
+        height: 60vh !important;
+        max-width: 600px;
+        max-height: 400px;
+    }
+
+    .game-tile {
+        font-size: 2rem;
+    }
+}
+
+@media (max-width: 600px) {
+    .grille .game-container {
+        width: 95vw !important;
+        height: 70vh !important;
+    }
+
+    .game-tile {
+        font-size: 1.5rem;
+    }
+
+    .page-dot {
+        width: 10px;
+        height: 10px;
+    }
+}
+
+/* Styles pour Grille.vue */
+.grille {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.grille .game-container {
+    width: 600px;
+    height: 400px;
+    background: transparent;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    align-items: center;
+    position: relative;
+    z-index: 0;  /* Container au plus bas niveau */
+}
+
+.grille .game-grid {
+    width: 100%;
+    height: 320px;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    grid-template-rows: repeat(2, 1fr);
+    gap: 20px;
+    padding: 20px;
+    transition: transform 0.6s ease-in-out;
+    position: relative;
+    z-index: 1;
+}
+
+.grille .game-tile {
+    width: 100%;
+    height: 100%;
+    background-color: #00BFFF;
+    color: white;
+    font-size: 2.5rem;
+    font-weight: bold;
+    border-radius: 15px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    user-select: none;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.grille .game-tile:hover {
+    transform: scale(1.05);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+}
+
+.grille .page-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background-color: #bdc3c7;
+    cursor: pointer;
+    transition: background-color 0.3s ease, transform 0.2s ease;
+}
+
+.grille .page-dot:hover {
+    transform: scale(1.2);
+}
+
+.grille .page-dot.active {
+    background-color: #00BFFF;
+    transform: scale(1.3);
+}
+
+/* Pagination */
+.grille .pagination {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 15px;
+    padding: 10px;
+    z-index: 3;  /* Pagination au-dessus de tout */
+    position: relative;
+}
+
+/* Styles pour Chat.vue */
+.chat {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.9);
+    display: flex;
+    flex-direction: column;
+    z-index: 1000;
+}
+
+.chat .chat-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+}
+
+.chat .chat-header h2 {
+    margin: 0;
+    font-size: 1.5rem;
+}
+
+.chat .close-chat-btn {
+    background: rgba(255, 255, 255, 0.2);
+    border: none;
+    color: white;
+    font-size: 1.5rem;
+    padding: 10px 15px;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+.chat .close-chat-btn:hover {
+    background: rgba(255, 255, 255, 0.3);
+}
+
+.chat .chat-messages {
+    flex: 1;
+    padding: 20px;
+    overflow-y: auto;
+    color: white;
+}
+
+.chat .chat-message {
+    margin-bottom: 15px;
+    padding: 10px 15px;
+    border-radius: 10px;
+    max-width: 70%;
+}
+
+.chat .chat-message.sent {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    margin-left: auto;
+    text-align: right;
+}
+
+.chat .chat-message:not(.sent) {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.chat .message-time {
+    display: block;
+    font-size: 0.8rem;
+    opacity: 0.7;
+    margin-top: 5px;
+}
+
+.chat .chat-input-container {
+    display: flex;
+    padding: 20px;
+    background: rgba(0, 0, 0, 0.8);
+    gap: 10px;
+}
+
+.chat .chat-input {
+    flex: 1;
+    padding: 15px;
+    border: none;
+    border-radius: 25px;
+    background: rgba(255, 255, 255, 0.9);
+    font-size: 1rem;
+    outline: none;
+}
+
+.chat .send-button {
+    padding: 15px 25px;
+    border: none;
+    border-radius: 25px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    font-weight: bold;
+    cursor: pointer;
+    transition: transform 0.2s ease;
+}
+
+.chat .send-button:hover {
+    transform: scale(1.05);
+}
+
+.chat .send-button:active {
+    transform: scale(0.95);
+}

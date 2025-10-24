@@ -1,0 +1,74 @@
+{
+  "name": "app-store-jeux",
+  "version": "1.0.0",
+  "description": "App Store de Jeux - Gestionnaire de collection de jeux",
+  "main": "src/js/main.js",
+  "scripts": {
+    "start": "electron . --no-sandbox",
+    "dev": "electron . --dev --no-sandbox",
+    "build": "electron-builder",
+    "build:win": "electron-builder --win",
+    "build:mac": "electron-builder --mac",
+    "build:linux": "electron-builder --linux",
+    "build:all": "electron-builder -wml",
+    "clean": "rm -rf dist/",
+    "test": "echo \"Tests à implémenter\" && exit 0",
+    "lint": "echo \"Linting à configurer\" && exit 0"
+  },
+  "keywords": [
+    "games",
+    "app-store",
+    "electron",
+    "desktop",
+    "multi-platform"
+  ],
+  "author": {
+    "name": "Développeur",
+    "email": "contact@appstore-jeux.com"
+  },
+  "license": "MIT",
+  "dependencies": {},
+  "devDependencies": {
+    "electron": "^25.0.0",
+    "electron-builder": "^24.0.0"
+  },
+  "build": {
+    "appId": "com.appstore.jeux",
+    "productName": "App Store de Jeux",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "src/**/*",
+      "!tests/**/*",
+      "!docs/**/*"
+    ],
+    "win": {
+      "target": "portable",
+      "icon": "assets/icon.ico"
+    },
+    "mac": {
+      "target": "zip",
+      "icon": "assets/icon.icns"
+    },
+    "linux": {
+      "target": "AppImage",
+      "icon": "assets/icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true
+    }
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/user/app-store-jeux.git"
+  },
+  "bugs": {
+    "url": "https://github.com/user/app-store-jeux/issues"
+  },
+  "engines": {
+    "node": ">=16.0.0",
+    "npm": ">=7.0.0"
+  }
+}

@@ -1,124 +1,193 @@
-# Architecture du Projet
+# Architecture du Projet - Version Vue.js Modulaire
 
-Structure organisée pour une application portable avec Dear PyGui, optimisée pour la compilation multi-plateforme.
+Application desktop multi-plateforme développée avec Vue.js 3, Electron et une architecture modulaire pour une maintenabilité et une évolutivité optimales.
 
-## Structure du Projet
+## 🚀 Démarrage Rapide
 
-```
-.
-├── main.py                # Point d'entrée de l'application
-├── requirements.txt       # Dépendances Python
-├── build/                # Configuration et scripts de compilation
-│   ├── build/            # Dossier temporaire de compilation
-│   ├── export/           # Sortie des exécutables compilés
-│   │   ├── linux/        # Version Linux compilée
-│   │   └── windows/      # Version Windows compilée
-│   ├── windows/          # Fichiers spécifiques Windows
-│   │   └── icon.ico      # Icône de l'application
-│   ├── build.spec        # Configuration de compilation Linux
-│   ├── windows.spec      # Configuration de compilation Windows
-│   ├── compile_linux.sh  # Script de compilation pour Linux
-│   └── compile_windows.sh # Script de compilation pour Windows
-└── docs/                 # Documentation supplémentaire
-    └── BUILD.md          # Guide complet de compilation
+### Installation des dépendances
+```bash
+npm install
 ```
 
-## Fichiers Principaux
+### Lancement de l'application
+```bash
+# Mode développement avec hot reload
+npm start
 
-### `main.py`
-- Point d'entrée unique de l'application
-- Interface utilisateur avec Dear PyGui
-- Configuration de la fenêtre principale
-- Gestion des événements et de la logique métier
+# Ou directement avec Electron
+npx electron .
+```
 
-### Fichiers de Compilation
+### Build et distribution
+```bash
+# Build multi-plateforme
+npm run build:all
 
-#### `build/build.spec`
-- Configuration PyInstaller pour Linux
-- Définit les ressources à inclure
-- Paramètres d'optimisation
+# Build spécifique par plateforme
+npm run build:win    # Windows
+npm run build:mac    # macOS
+npm run build:linux  # Linux
+```
 
-#### `build/windows.spec`
-- Configuration PyInstaller pour Windows
-- Inclut les ressources spécifiques Windows
-- Configuration pour création d'exécutable sans console
+## Structure du Projet Modulaire
 
-#### Scripts de Compilation
-- `compile_linux.sh` : Compilation automatisée pour Linux
-- `compile_windows.sh` : Compilation pour Windows via Wine
+```
+📁 app-store-jeux/
+├── 📄 package.json              # Configuration + scripts build
+├── 📁 src/                      # Code source modulaire
+│   ├── 📄 index.html           # Point d'entrée Vue.js
+│   ├── 📄 App.css              # Styles globaux
+│   ├── 📁 styles/
+│   │   └── 📄 styles.css       # Styles CSS organisés
+│   ├── 📁 js/
+│   │   ├── 📄 app.js           # Configuration Vue.js
+│   │   ├── 📄 components.js    # Composants Vue.js modulaires
+│   │   ├── 📄 main.js          # Processus principal Electron
+│   │   └── 📄 preload.js       # APIs sécurisées contextBridge
+│   └── 📁 views/               # Vues Vue.js séparées
+│       ├── 📄 Grille.vue       # Vue de la grille de jeux
+│       └── 📄 Chat.vue         # Vue du chat en temps réel
+├── 📁 e2ee-relay/              # Serveur Node.js pour la communication
+│   └── 📄 server.js            # Serveur de messagerie temps réel
+├── 📁 assets/                  # Ressources (icônes, images)
+├── 📁 docs/                    # Documentation
+│   ├── 📄 ARCHITECTURE.md     # Ce document
+│   ├── 📄 BUILD.md            # Guide de compilation
+│   └── 📄 cdc.md              # Cahier des charges
+└── 📄 README.md               # Documentation projet
+```
+
+## Composants Principaux
+
+### Architecture Vue.js Modulaire
+
+#### 1. Point d'Entrée (`src/index.html`)
+- Page HTML5 propre avec imports modulaires
+- Point de montage Vue.js (`<div id="app">`)
+- Imports CSS et JavaScript séparés
+
+#### 2. Configuration Vue.js (`src/js/app.js`)
+- Import de Vue.js 3 via CDN
+- Import des composants modulaires
+- Configuration et montage de l'application
+- Gestion des événements inter-composants
+
+#### 3. Composants Vue.js (`src/js/components.js`)
+- **App** : Composant principal avec gestion des vues
+- **Grille** : Vue de la grille avec transitions de glissement
+- **Chat** : Vue du chat avec messages en temps réel
+- Exports ES6 pour modularité
+
+#### 4. Vues Vue.js (`src/views/`)
+- **Grille.vue** : Interface de navigation des jeux
+- **Chat.vue** : Interface de messagerie
+- Composants réutilisables et maintenables
+
+#### 5. Styles CSS (`src/styles/styles.css`)
+- Organisation hiérarchique des styles
+- Z-index pour superposition correcte
+- Responsive design optimisé
+- Transitions CSS fluides
+
+### Processus Electron
+
+#### 6. Processus Principal (`src/js/main.js`)
+- Configuration de sécurité renforcée
+- Gestion de la fenêtre (800×600, non-redimensionnable)
+- Menu système supprimé (`Menu.setApplicationMenu(null)`)
+- Communication IPC avec le renderer
+
+#### 8. Serveur de Communication (`e2ee-relay/server.js`)
+- Serveur Node.js pour la messagerie temps réel
+- WebSockets pour la communication bidirectionnelle
+- Chiffrement end-to-end des messages
+- Déploiement sur Railway pour l'hébergement cloud
+
+## Flux de Données Complet
+
+1. **Initialisation**
+   - Chargement de `index.html` dans le renderer
+   - Import de Vue.js 3 via CDN
+   - Configuration des composants modulaires
+   - Montage de l'application sur `#app`
+
+2. **Navigation Inter-Vues**
+   - **Vue Grille** : Navigation paginée avec transitions
+   - **Vue Chat** : Messagerie en temps réel
+   - Communication via événements Vue.js (`@show-chat`, `@close-chat`)
+   - État réactif géré par le composant App
+
+3. **Communication Serveur**
+   - Connexion WebSocket via le serveur e2ee-relay
+   - Messages chiffrés end-to-end
+   - Synchronisation temps réel entre clients
+   - Gestion des erreurs et reconnexions
+
+4. **Transitions Fluides**
+   - Animations CSS3 (0.6s) pour les changements de page
+   - Glissement gauche/droite selon la direction
+   - Pagination fixe avec z-index approprié
+   - Nettoyage automatique des éléments DOM
 
 ## Flux de Travail de Développement
 
-1. **Développement** :
-   - Coder dans `main.py`
-   - Tester avec `python main.py`
+1. **Configuration**
+   - Installation : `npm install`
+   - Structure modulaire avec dossiers séparés
+   - Configuration Vue.js et Electron
 
-2. **Compilation** :
-   - Pour Linux : `cd build && ./compile_linux.sh`
-   - Pour Windows : `cd build && ./compile_windows.sh`
-   - Les binaires sont générés dans `build/export/`
+2. **Développement**
+   - Vue.js : Éditer `src/views/*.vue`, `src/js/components.js`
+   - Styles : Modifier `src/styles/styles.css`
+   - Electron : Ajuster `src/js/main.js`, `src/js/preload.js`
+   - Hot reload automatique via Vue.js
 
-3. **Distribution** :
-   - Les archives ZIP sont créées automatiquement
-   - Contiennent tout le nécessaire pour l'exécution
+3. **Tests**
+   - Tests des transitions Vue.js
+   - Validation des événements inter-composants
+   - Tests de sécurité Electron
 
-## Bonnes Pratiques
+4. **Build**
+   - Configuration electron-builder optimisée
+   - Build multi-plateforme avec Docker
+   - Applications portables générées
 
-- Toujours tester la compilation après des changements majeurs
-- Garder les fichiers de configuration de version (`*.spec`)
-- Documenter les dépendances dans `requirements.txt`
-- Utiliser les chemins relatifs pour les ressources
+## Technologies Utilisées
 
-## Dépannage
+- **Vue.js 3** : Framework JavaScript modulaire et réactif
+- **Electron** : Framework desktop pour applications web
+- **Node.js** : Serveur backend pour la communication temps réel
+- **CSS3** : Animations, Grid, Flexbox, transitions
+- **JavaScript ES6+** : Modules, classes, arrow functions
+- **HTML5** : Structure sémantique et APIs modernes
 
-Consultez `docs/BUILD.md` pour :
-- Les problèmes courants
-- La configuration de l'environnement
-- Les dépendances requises
+## Bonnes Pratiques Vue.js
 
-## Règles simples
-- Tout le code dans `main.py`
-- Configuration de compilation dans `build/build.spec`
-- Pas de fichiers inutiles
-- Documentation dans `README.md` et `ARCHITECTURE.md`
-- Fichiers générés dans `build/` et `dist/`
+- **Composants modulaires** : Séparation claire des responsabilités
+- **Props et Events** : Communication inter-composants typée
+- **Computed Properties** : Données réactives optimisées
+- **Styles scopés** : CSS organisé par composant
+- **Lifecycle hooks** : Gestion du cycle de vie Vue.js
 
-## Compilation
+## Sécurité Electron
 
-```bash
-# Nettoyer
-rm -rf build/ dist/
+- **nodeIntegration: false** : Isolation du renderer
+- **contextIsolation: true** : Contexte séparé pour la sécurité
+- **Preload Script** : Pont sécurisé entre main et renderer
+- **Menu supprimé** : Interface épurée sans distractions
 
-# Compiler
-pyinstaller --clean build/build.spec
-```
+## Performance et Optimisation
 
-## Fichiers à ignorer
+- **Transitions CSS3** : Animations hardware-accelerated
+- **Imports modulaires** : Chargement optimisé des composants
+- **Z-index hiérarchique** : Rendu correct des superpositions
+- **Responsive design** : Adaptation aux différentes tailles d'écran
 
-Assurez-vous que votre `.gitignore` contient au minimum :
+## Évolutions Futures
 
-```
-# Dossiers de build
-/build/
-/dist/
-*.spec
-__pycache__/
-*.py[cod]
-*$py.class
-
-# Fichiers de configuration locaux
-.env
-.venv
-venv/
-
-# Fichiers système
-.DS_Store
-Thumbs.db
-```
-
-## Bonnes pratiques
-
-1. **Ne jamais** commiter de fichiers compilés
-2. **Toujours** utiliser des chemins relatifs dans le code
-3. **Documenter** toute modification de la structure
-4. **Utiliser** des variables d'environnement pour les configurations sensibles
+- **Serveur e2ee-relay** : Intégration complète du serveur Node.js
+- Système de comptes utilisateurs
+- Thèmes personnalisables
+- API REST pour la gestion des jeux
+- Tests unitaires Vue.js
+- Documentation API des composants

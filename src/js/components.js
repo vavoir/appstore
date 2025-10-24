@@ -1,0 +1,250 @@
+// Composants Vue.js modulaires - App Store de Jeux
+
+// Composant principal App
+export const App = {
+    template: `
+        <div class="app">
+            <Grille
+                v-if="currentView === 'grille'"
+                @show-chat="showChat"
+            />
+            <Chat
+                v-if="currentView === 'chat'"
+                @close-chat="closeChat"
+            />
+        </div>
+    `,
+
+    data() {
+        return {
+            currentView: 'grille'
+        }
+    },
+
+    methods: {
+        showChat() {
+            this.currentView = 'chat';
+        },
+        closeChat() {
+            this.currentView = 'grille';
+        }
+    },
+
+    mounted() {
+        console.log('🚀 App Vue.js initialisée');
+    }
+};
+
+// Composant Grille
+export const Grille = {
+    template: `
+        <div class="grille">
+            <div class="game-container">
+                <div class="game-grid">
+                    <div
+                        v-for="game in currentGames"
+                        :key="game.id"
+                        class="game-tile"
+                        @click="handleTileClick(game.id)"
+                    >
+                        {{ game.number }}
+                    </div>
+                </div>
+
+                <div class="pagination">
+                    <div
+                        v-for="page in totalPages"
+                        :key="page"
+                        class="page-dot"
+                        :class="{ 'active': page === currentPage }"
+                        @click="goToPage(page)"
+                    ></div>
+                </div>
+            </div>
+        </div>
+    `,
+
+    emits: ['show-chat'],
+
+    data() {
+        return {
+            currentPage: 1,
+            totalPages: 3,
+            gamesPerPage: 8,
+            allGames: []
+        }
+    },
+
+    computed: {
+        currentGames() {
+            const startIndex = (this.currentPage - 1) * this.gamesPerPage;
+            const endIndex = startIndex + this.gamesPerPage;
+            return this.allGames.slice(startIndex, endIndex);
+        }
+    },
+
+    methods: {
+        // ⚠️ IMPORTANT : Garder les transitions de glissement entre les pages
+        goToPage(page) {
+            if (page >= 1 && page <= this.totalPages && page !== this.currentPage) {
+                const direction = page > this.currentPage ? 'right' : 'left';
+                this.createTransitionGrid(page, direction);
+                this.currentPage = page;
+                console.log('Page changée vers:', page);
+            }
+        },
+
+        createTransitionGrid(targetPage, direction) {
+            const container = document.querySelector('.game-container');
+            const currentGrid = document.querySelector('.game-grid');
+            const pagination = document.querySelector('.pagination');
+
+            const newGrid = document.createElement('div');
+            newGrid.className = 'game-grid';
+            newGrid.style.position = 'absolute';
+            newGrid.style.top = '0';
+            newGrid.style.left = '0';
+            newGrid.style.width = '100%';
+            newGrid.style.height = '320px';
+            newGrid.style.zIndex = '2';
+
+            if (direction === 'right') {
+                newGrid.style.transform = 'translateX(100%)';
+            } else {
+                newGrid.style.transform = 'translateX(-100%)';
+            }
+
+            const startIndex = (targetPage - 1) * this.gamesPerPage;
+            const endIndex = startIndex + this.gamesPerPage;
+            const newGames = this.allGames.slice(startIndex, endIndex);
+
+            newGames.forEach(game => {
+                const tile = document.createElement('div');
+                tile.className = 'game-tile';
+                tile.textContent = game.number;
+
+                tile.addEventListener('click', () => {
+                    this.handleTileClick(game.id);
+                });
+
+                newGrid.appendChild(tile);
+            });
+
+            container.appendChild(newGrid);
+
+            // Remettre la pagination à la fin pour qu'elle soit au-dessus de tout
+            container.appendChild(pagination);
+
+            setTimeout(() => {
+                currentGrid.style.transform = direction === 'right' ? 'translateX(-100%)' : 'translateX(100%)';
+                currentGrid.style.opacity = '0.7';
+                currentGrid.style.zIndex = '1';
+                newGrid.style.transform = 'translateX(0)';
+                newGrid.style.opacity = '1';
+                newGrid.style.zIndex = '1';  // Même niveau que la grille normale
+            }, 10);
+
+            setTimeout(() => {
+                currentGrid.remove();
+                newGrid.style.position = 'relative';
+                newGrid.style.zIndex = '1';
+                console.log('Transition terminée vers la page', targetPage);
+            }, 600);
+        },
+
+        handleTileClick(gameId) {
+            if (gameId === 1) {
+                this.$emit('show-chat');
+            } else {
+                console.log('Jeu ' + gameId + ' cliqué');
+            }
+        },
+
+        generateGames() {
+            this.allGames = [];
+            for (let i = 1; i <= 24; i++) {
+                this.allGames.push({
+                    id: i,
+                    number: i
+                });
+            }
+        }
+    },
+
+    mounted() {
+        this.generateGames();
+    }
+};
+
+// Composant Chat
+export const Chat = {
+    template: `
+        <div class="chat">
+            <div class="chat-header">
+                <h2>💬 Chat en Temps Réel</h2>
+                <button class="close-chat-btn" @click="closeChat">✕</button>
+            </div>
+
+            <div class="chat-messages">
+                <div
+                    v-for="message in messages"
+                    :key="message.id"
+                    class="chat-message"
+                    :class="{ 'sent': message.type === 'sent' }"
+                >
+                    <strong>{{ message.sender }}:</strong> {{ message.content }}
+                    <span class="message-time">{{ message.time }}</span>
+                </div>
+            </div>
+
+            <div class="chat-input-container">
+                <input
+                    v-model="newMessage"
+                    type="text"
+                    placeholder="Tapez votre message..."
+                    class="chat-input"
+                    @keypress.enter="sendMessage"
+                >
+                <button @click="sendMessage" class="send-button">📤 Envoyer</button>
+            </div>
+        </div>
+    `,
+
+    emits: ['close-chat'],
+
+    data() {
+        return {
+            newMessage: '',
+            messages: [
+                {
+                    id: 1,
+                    sender: 'Serveur',
+                    content: 'Bienvenue dans le chat !',
+                    time: new Date().toLocaleTimeString(),
+                    type: 'received'
+                }
+            ]
+        }
+    },
+
+    methods: {
+        closeChat() {
+            this.$emit('close-chat');
+        },
+
+        sendMessage() {
+            if (this.newMessage.trim()) {
+                this.messages.push({
+                    id: Date.now(),
+                    sender: 'Vous',
+                    content: this.newMessage.trim(),
+                    time: new Date().toLocaleTimeString(),
+                    type: 'sent'
+                });
+
+                this.newMessage = '';
+                console.log('Message envoyé');
+            }
+        }
+    }
+};

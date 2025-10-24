@@ -1,235 +1,270 @@
-# Guide de Compilation
+# Guide de Build - App Store de Jeux
 
-Ce document décrit les attentes et les procédures pour la compilation de l'application.
+Guide complet pour la compilation et la distribution de l'application Electron.
 
-## Objectifs de Compilation
+## Prérequis
 
-1. **Portabilité** : Créer des exécutables autonomes ne nécessitant pas d'installation
-2. **Propreté** : Garder le répertoire racine propre
-3. **Simplicité** : Processus de compilation simple et reproductible
-4. **Multiplateforme** : Support pour au moins Windows et Linux
+### Système
+- **Linux** : Ubuntu 18.04+ ou distribution équivalente
+- **Windows** : Windows 10+ (64-bit)
+- **macOS** : macOS 10.13+ (64-bit)
 
-## Outils Recommandés
+### Outils
+- **Node.js** : Version 16+ (LTS recommandée)
+- **npm** : Version 7+ (inclus avec Node.js)
+- **Git** : Pour le contrôle de version
+- **Docker** : Pour la cross-compilation (optionnel)
 
-### PyInstaller
-- **Version** : >= 6.0.0
-- **Utilisation** : Pour créer des exécutables autonomes
-- **Avantages** :
-  - Simple à utiliser
-  - Bon support de Dear PyGui
-  - Multiplateforme
-  - Peut créer des exécables sans console
+## Installation
 
-### Wine (pour compilation croisée)
-- **Utilisation** : Pour compiler pour Windows depuis Linux
-- **Configuration** : Préfixe dédié `~/.wine-pyinstaller`
-- **Version Python** : 3.9.x recommandée pour la meilleure compatibilité
-
-## Structure des Dossiers
-
-```
-build/
-├── build/              # Dossier temporaire de compilation
-├── export/             # Dossier final pour les exécutables compilés
-│   ├── linux/          # Version Linux
-│   └── windows/        # Version Windows
-│   └── MAC/            # Version MAC
-├── windows/            # Fichiers spécifiques Windows
-│   └── icon.ico        # Icône de l'application
-├── build.spec          # Configuration Linux
-└── windows.spec        # Configuration Windows
-```
-
-## Emplacement des Fichiers Compilés
-
-Tous les fichiers compilés sont exportés dans le dossier `build/export/` :
-- `build/export/linux/` : Version Linux
-- `build/export/windows/` : Version Windows
-
-## Configuration de l'environnement de compilation Windows (Wine)
-
-### Prérequis
-- Wine installé sur votre système Linux
-- Connexion Internet pour le téléchargement des paquets
-
-### Configuration de l'environnement Wine
-
-1. **Nettoyer l'environnement existant (si nécessaire)** :
-   ```bash
-   rm -rf ~/.wine-pyinstaller
-   ```
-
-2. **Configurer Wine en 32 bits** :
-   ```bash
-   export WINEARCH=win32
-   export WINEPREFIX=~/.wine-pyinstaller
-   winecfg  # Laisser la configuration par défaut
-   ```
-
-3. **Installer Python 3.9 pour Windows** :
-   ```bash
-   wget https://www.python.org/ftp/python/3.9.0/python-3.9.0.exe -O /tmp/python-3.9.0.exe
-   wine /tmp/python-3.9.0.exe /quiet InstallAllUsers=1 PrependPath=1
-   ```
-
-4. **Installer les dépendances nécessaires** :
-   ```bash
-   # Mettre à jour pip
-   wine python -m pip install --upgrade pip
-   
-   # Installer PyInstaller
-   wine pip install pyinstaller
-   
-   # Installer Dear PyGui
-   wine pip install dearpygui
-   ```
-
-5. **Vérifier l'installation** :
-   ```bash
-   wine python -c "import dearpygui; print('Dear PyGui version:', dearpygui.get_dearpygui_version())"
-   ```
-
-## Procédure de Compilation
-
-### Pour Linux
+### 1. Clonage du projet
 ```bash
-# Se placer à la racine du projet
-cd /chemin/vers/votre/projet
-
-# Nettoyage
-rm -rf build/export/linux/ build/build/ build/dist/
-mkdir -p build/export/linux/
-
-# Installation des dépendances (si nécessaire)
-pip install -r requirements.txt
-
-# Compilation
-pyinstaller --clean build/build.spec
-
-# Vérification
-if [ -f "dist/MonAppPortable" ]; then
-    cp -r dist/* build/export/linux/
-    echo "✅ Compilation réussie !"
-    echo "📁 Dossier d'export : build/export/linux/"
-else
-    echo "❌ La compilation a échoué"
-    exit 1
-fi
+git clone <repository-url>
+cd app-store-jeux
 ```
 
-### Pour Windows (depuis Linux avec Wine)
-Le script `compile_windows.sh` gère automatiquement tout le processus :
+### 2. Installation des dépendances
+```bash
+npm install
+```
+
+### 3. Configuration
+```bash
+# Vérifier la configuration
+npm list --depth=0
+
+# Configuration optionnelle pour le développement
+cp config.json.example config.json 2>/dev/null || echo "Configuration déjà présente"
+```
+
+## Développement
+
+### Démarrage en mode développement
+```bash
+npm start
+```
+
+**Fonctionnalités du mode développement :**
+- Hot reload automatique
+- Outils de développement (F12)
+- Console de debug
+- Rechargement automatique des modifications
+
+### Tests
+```bash
+# Tests unitaires
+npm test
+
+# Tests d'intégration
+npm run test:integration
+
+# Tests avec coverage
+npm run test:coverage
+```
+
+## Build et Distribution
+
+### Build Local
+
+**Prérequis :** Avoir les outils de compilation pour la plateforme cible.
 
 ```bash
-# Se placer à la racine du projet
-cd /chemin/vers/votre/projet
+# Build pour la plateforme courante
+npm run build
 
-# Rendre le script exécutable (si nécessaire)
-chmod +x build/compile_windows.sh
+# Build pour Windows (depuis Windows/Linux)
+npm run build:win
 
-# Lancer la compilation
-./build/compile_windows.sh
+# Build pour macOS (depuis macOS)
+npm run build:mac
+
+# Build pour Linux (depuis Linux)
+npm run build:linux
 ```
 
-Le script effectue les étapes suivantes :
-1. Vérifie les prérequis (Wine, Python)
-2. Nettoie les anciennes compilations
-3. Installe les dépendances dans l'environnement Wine
-4. Compile l'application avec PyInstaller
-5. Copie les fichiers dans `build/export/windows/`
-6. Crée une archive ZIP dans le dossier racine
+### Cross-Compilation avec Docker (Recommandé)
 
-### Structure des dossiers après compilation
+**Solution la plus fiable pour compiler depuis Linux vers toutes les plateformes.**
 
-```
-build/export/
-├── linux/
-│   └── MonAppPortable     # Exécutable Linux
-└── windows/
-    ├── MonAppPortable.exe  # Exécutable Windows
-    └── ...                # Fichiers de dépendances
+```bash
+# Build multi-plateforme
+npm run build:all
+
+# Ou directement avec Docker
+docker run --rm -ti \
+  -v ${PWD}:/project \
+  -v ~/.cache/electron:/root/.cache/electron \
+  -v ~/.cache/electron-builder:/root/.cache/electron-builder \
+  electronuserland/builder:latest \
+  --linux --win --mac
 ```
 
-## Dépannage
+## Fichiers Générés
 
-### Problèmes courants sous Windows
+### Structure des builds
+```
+dist/
+├── latest-linux.yml          # Métadonnées Linux
+├── latest-mac.yml           # Métadonnées macOS
+├── latest-windows.yml       # Métadonnées Windows
+├── App Store de Jeux-1.0.0.AppImage  # Linux portable
+├── App Store de Jeux Setup 1.0.0.exe  # Windows installer
+└── App Store de Jeux-1.0.0.dmg       # macOS installer
+```
 
-1. **Erreur de DLL manquante** :
-   - Vérifiez que toutes les dépendances sont installées dans Wine
-   - Essayez d'installer les redistribuables Visual C++ :
-     ```
-     WINEPREFIX=~/.wine-pyinstaller winetricks vcrun2019
-     ```
+### Formats de distribution
+- **Windows** : `.exe` (installer NSIS)
+- **macOS** : `.dmg` (installer standard macOS)
+- **Linux** : `.AppImage` (portable, fonctionne sur la plupart des distributions)
 
-2. **L'application ne démarre pas** :
-   - Vérifiez les logs dans la console
-   - Essayez avec `console=True` dans le fichier `.spec` pour voir les erreurs
+## Tests Post-Build
 
-3. **Erreur de thème** :
-   ```
-   WINEPREFIX=~/.wine-pyinstaller winetricks settings fontsmooth=rgb
-   ```
+### 1. Tests Automatisés
+```bash
+# Validation des packages générés
+npm run test:build
 
-## Bonnes Pratiques
+# Vérification des signatures
+npm run verify:signatures
+```
 
-1. **Versionnage** :
-   - Ne pas versionner les dossiers `build/` et `dist/`
-   - Versionner les fichiers `.spec`
+### 2. Tests Manuels
 
-2. **Nettoyage** :
-   - Toujours nettoyer avant une nouvelle compilation
-   - Utiliser `--clean` avec PyInstaller
-   - **Vider le dossier d'export** avant chaque compilation pour éviter les fichiers obsolètes :
-     ```bash
-     rm -rf build/export/linux/* build/export/windows/*
-     ```
+#### Windows
+1. Transférer le fichier `.exe` sur une machine Windows
+2. Double-cliquer pour installer
+3. Vérifier l'icône dans la barre des tâches
+4. Tester les fonctionnalités principales
+5. Vérifier la désinstallation
 
-3. **Dépendances** :
-   - Maintenir un fichier `requirements.txt` à jour
-   - Tester avec des environnements propres
+#### macOS
+1. Transférer le fichier `.dmg` sur un Mac
+2. Double-cliquer pour monter l'image
+3. Glisser l'application dans Applications
+4. Vérifier l'icône dans le dock
+5. Tester les fonctionnalités principales
 
-## Dépannage
+#### Linux
+1. Transférer le fichier `.AppImage` sur une machine Linux
+2. Rendre exécutable : `chmod +x App\ Store\ de\ Jeux-1.0.0.AppImage`
+3. Double-cliquer ou exécuter : `./App\ Store\ de\ Jeux-1.0.0.AppImage`
+4. Vérifier l'icône dans le lanceur d'applications
 
-### Problèmes Courants
-- **Fichiers manquants** : Vérifier les chemins dans les fichiers `.spec`
-- **Taille de l'exécutable** : Utiliser UPX pour réduire la taille
-- **Erreurs d'import** : Vérifier les `hidden_imports` dans le `.spec`
+## Déploiement
 
-### Logs
-Les logs de compilation sont disponibles dans :
-- `build/export/warn-*.txt`
-- `build/export/*.toc`
+### Release GitHub
+1. **Créer un tag** : `git tag v1.0.0`
+2. **Push du tag** : `git push origin v1.0.0`
+3. **Upload automatique** : Les fichiers de `dist/` sont uploadés automatiquement
 
-## Personnalisation
+### Distribution manuelle
+1. **Compresser les builds** : `zip -r releases.zip dist/`
+2. **Transférer** vers les serveurs de distribution
+3. **Mettre à jour** la documentation avec les liens de téléchargement
 
-### Dossier d'Export
-- Tous les fichiers compilés sont automatiquement placés dans `build/export/`
-- Les dossiers sont organisés par système d'exploitation
-- Les fichiers temporaires restent dans `build/build/`
+## Optimisation
 
-### Icônes
-- Placer les icônes dans `build/windows/`
-- Mettre à jour le chemin dans le fichier `.spec`
+### Réduction de la taille
+```bash
+# Exclure les fichiers de développement
+npm run build -- --publish=never
 
-### Configuration Spécifique
-- Modifier les fichiers `.spec` pour des besoins particuliers
-- Pour Dear PyGui, assurez-vous d'inclure les hooks nécessaires :
-  ```python
-  # Dans votre fichier .spec
-  hiddenimports=['dearpygui']
-  ```
-- Si vous rencontrez des erreurs de dépendances manquantes, créez un fichier hook personnalisé dans `build/dearpygui_hook.py`
+# Compression des assets
+npm run optimize:assets
+```
 
-### Dépannage des erreurs courantes
+### Cache des builds
+```bash
+# Utiliser les caches Docker pour accélérer les builds
+mkdir -p ~/.cache/electron ~/.cache/electron-builder
 
-#### Erreur de dépendances manquantes
-Si l'application ne se lance pas avec une erreur concernant des modules manquants :
-1. Vérifiez le fichier `warn-AppStore.txt` dans le dossier de build
-2. Ajoutez les modules manquants avec `--hidden-import`
+# Les caches sont automatiquement montés dans les conteneurs Docker
+```
 
-#### Problèmes avec les ressources
-Si des ressources (icônes, images) ne sont pas trouvées :
-- Vérifiez les chemins absolus dans le code
-- Utilisez `os.path.join()` pour les chemins multiplateforme
-- Ajoutez les fichiers manquants avec `--add-data` dans PyInstaller
-- Documenter les modifications dans ce fichier
+## Problèmes Courants
+
+### Erreur : "Cannot find module"
+**Solution :**
+```bash
+rm -rf node_modules package-lock.json
+npm install
+```
+
+### Erreur : "SUID sandbox helper binary" (Linux)
+**Solution :**
+L'option `--no-sandbox` est automatiquement ajoutée aux scripts de développement.
+Pour la production, configurez correctement les permissions du sandbox :
+
+```bash
+sudo chown root:root /path/to/app/node_modules/electron/dist/chrome-sandbox
+sudo chmod 4755 /path/to/app/node_modules/electron/dist/chrome-sandbox
+```
+
+**Alternative :**
+Pour le développement uniquement, utiliser `--no-sandbox` est acceptable.
+
+### Erreur : "Code signing failed" (macOS)
+**Solution :**
+- Configurer les certificats de signature dans le Keychain
+- Ou utiliser `npm run build:mac -- --publish=never` pour build sans signature
+
+### Erreur : "NSIS installer creation failed" (Windows)
+**Solution :**
+- Installer NSIS : `choco install nsis`
+- Ou utiliser le build Docker depuis Linux
+
+## Variables d'Environnement
+
+### Développement
+```bash
+NODE_ENV=development    # Mode développement
+DEBUG=electron:*       # Debug Electron
+```
+
+### Production
+```bash
+NODE_ENV=production    # Mode production
+SIGN=true             # Activer la signature des binaires
+```
+
+## Support Multi-Plateforme
+
+### Tests sur Machines Virtuelles
+- **Windows** : VirtualBox avec Windows 10
+- **macOS** : VirtualBox avec macOS (nécessite configuration spéciale)
+- **Linux** : Docker containers pour différentes distributions
+
+### Tests en Ligne
+- **BrowserStack** : Tests automatisés sur vraies machines
+- **Sauce Labs** : Tests cross-browser et cross-OS
+
+## Maintenance
+
+### Mise à jour des dépendances
+```bash
+# Vérifier les mises à jour disponibles
+npm outdated
+
+# Mettre à jour les dépendances
+npm update
+
+# Mettre à jour les dépendances majeures
+npm install electron@latest
+```
+
+### Nettoyage
+```bash
+# Nettoyer les caches
+npm run clean
+
+# Supprimer tous les fichiers générés
+rm -rf dist/ build/ node_modules/
+npm install
+```
+
+## Ressources
+
+- [Documentation Electron](https://electronjs.org/docs)
+- [Documentation electron-builder](https://www.electron.build/)
+- [Guide de sécurité Electron](https://electronjs.org/docs/tutorial/security)
+- [Community Discord Electron](https://discord.gg/electron)
