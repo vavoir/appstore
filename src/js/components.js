@@ -182,6 +182,9 @@ export const Chat = {
         <div class="chat">
             <div class="chat-header">
                 <h2>💬 Chat en Temps Réel</h2>
+                <div class="connection-status">
+                    <span :class="connectionClass">{{ connectionText }}</span>
+                </div>
                 <button class="close-chat-btn" @click="closeChat">✕</button>
             </div>
 
@@ -190,7 +193,7 @@ export const Chat = {
                     v-for="message in messages"
                     :key="message.id"
                     class="chat-message"
-                    :class="{ 'sent': message.type === 'sent' }"
+                    :class="{ 'sent': message.type === 'sent', 'system': message.type === 'system' }"
                 >
                     <strong>{{ message.sender }}:</strong> {{ message.content }}
                     <span class="message-time">{{ message.time }}</span>
@@ -204,8 +207,9 @@ export const Chat = {
                     placeholder="Tapez votre message..."
                     class="chat-input"
                     @keypress.enter="sendMessage"
+                    :disabled="!isConnected"
                 >
-                <button @click="sendMessage" class="send-button">📤 Envoyer</button>
+                <button @click="sendMessage" class="send-button" :disabled="!isConnected">📤 Envoyer</button>
             </div>
         </div>
     `,
@@ -223,28 +227,150 @@ export const Chat = {
                     time: new Date().toLocaleTimeString(),
                     type: 'received'
                 }
-            ]
+            ],
+            ws: null,
+            isConnected: false,
+            reconnectAttempts: 0,
+            maxReconnectAttempts: 5
+        }
+    },
+
+    computed: {
+        connectionClass() {
+            return {
+                'connected': this.isConnected,
+                'disconnected': !this.isConnected
+            }
+        },
+        connectionText() {
+            return this.isConnected ? '🟢 Connecté' : '🔴 Déconnecté';
         }
     },
 
     methods: {
         closeChat() {
+            this.disconnectWebSocket();
             this.$emit('close-chat');
         },
 
-        sendMessage() {
-            if (this.newMessage.trim()) {
-                this.messages.push({
-                    id: Date.now(),
-                    sender: 'Vous',
-                    content: this.newMessage.trim(),
-                    time: new Date().toLocaleTimeString(),
-                    type: 'sent'
-                });
+        connectWebSocket() {
+            // Configuration flexible pour développement et production
+            let wsUrl;
+            if (typeof window !== 'undefined' && window.location) {
+                // En production (Railway), utiliser la même origine avec wss
+                wsUrl = (window.location.protocol === 'https:' ? 'wss:' : 'ws:') +
+                       '//' + window.location.host;
+            } else {
+                // En développement local
+                wsUrl = 'ws://localhost:3000';
+            }
 
+            console.log('🔌 Tentative de connexion à:', wsUrl);
+
+            try {
+                this.ws = new WebSocket(wsUrl);
+
+                this.ws.onopen = () => {
+                    console.log('🟢 Connecté au serveur de chat');
+                    this.isConnected = true;
+                    this.reconnectAttempts = 0;
+
+                    // Rejoindre une room par défaut (chat global)
+                    this.ws.send(JSON.stringify({
+                        type: 'join',
+                        roomId: 'global-chat'
+                    }));
+
+                    this.addMessage('Système', 'Connecté au serveur de chat !', 'system');
+                };
+
+                this.ws.onmessage = (event) => {
+                    try {
+                        const data = JSON.parse(event.data);
+                        if (data.type === 'message') {
+                            this.addMessage('Autre utilisateur', data.payload, 'received');
+                        }
+                    } catch (error) {
+                        console.error('Erreur parsing message:', error);
+                    }
+                };
+
+                this.ws.onclose = () => {
+                    console.log('🔴 Déconnecté du serveur');
+                    this.isConnected = false;
+                    this.attemptReconnect();
+                };
+
+                this.ws.onerror = (error) => {
+                    console.error('❌ Erreur WebSocket:', error);
+                    this.isConnected = false;
+                };
+
+            } catch (error) {
+                console.error('❌ Erreur connexion WebSocket:', error);
+                this.isConnected = false;
+                this.attemptReconnect();
+            }
+        },
+
+        disconnectWebSocket() {
+            if (this.ws) {
+                this.ws.close();
+                this.ws = null;
+            }
+            this.isConnected = false;
+        },
+
+        attemptReconnect() {
+            if (this.reconnectAttempts < this.maxReconnectAttempts) {
+                this.reconnectAttempts++;
+                console.log(`🔄 Tentative de reconnexion ${this.reconnectAttempts}/${this.maxReconnectAttempts}...`);
+
+                setTimeout(() => {
+                    this.connectWebSocket();
+                }, 2000 * this.reconnectAttempts); // Backoff exponentiel
+            } else {
+                this.addMessage('Système', 'Impossible de se reconnecter au serveur.', 'system');
+            }
+        },
+
+        sendMessage() {
+            if (this.newMessage.trim() && this.isConnected && this.ws) {
+                // Envoyer via WebSocket
+                this.ws.send(JSON.stringify({
+                    type: 'message',
+                    roomId: 'global-chat',
+                    payload: this.newMessage.trim()
+                }));
+
+                // Ajouter le message localement
+                this.addMessage('Vous', this.newMessage.trim(), 'sent');
                 this.newMessage = '';
-                console.log('Message envoyé');
+                console.log('📤 Message envoyé via WebSocket');
+            }
+        },
+
+        addMessage(sender, content, type) {
+            this.messages.push({
+                id: Date.now() + Math.random(),
+                sender: sender,
+                content: content,
+                time: new Date().toLocaleTimeString(),
+                type: type
+            });
+
+            // Garder seulement les 50 derniers messages
+            if (this.messages.length > 50) {
+                this.messages = this.messages.slice(-50);
             }
         }
+    },
+
+    mounted() {
+        this.connectWebSocket();
+    },
+
+    beforeUnmount() {
+        this.disconnectWebSocket();
     }
 };

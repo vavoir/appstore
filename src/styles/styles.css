@@ -167,6 +167,19 @@ body {
     color: white;
 }
 
+.chat .connection-status {
+    font-size: 0.9rem;
+    font-weight: bold;
+}
+
+.chat .connection-status .connected {
+    color: #4ade80;
+}
+
+.chat .connection-status .disconnected {
+    color: #f87171;
+}
+
 .chat .chat-header h2 {
     margin: 0;
     font-size: 1.5rem;
@@ -250,6 +263,21 @@ body {
     transform: scale(1.05);
 }
 
-.chat .send-button:active {
-    transform: scale(0.95);
+.chat .chat-message.system {
+    background: rgba(255, 193, 7, 0.2);
+    border: 1px solid #fbbf24;
+    text-align: center;
+    font-style: italic;
+    opacity: 0.8;
+}
+
+.chat .chat-input:disabled,
+.chat .send-button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none !important;
+}
+
+.chat .send-button:disabled:hover {
+    transform: none !important;
 }
